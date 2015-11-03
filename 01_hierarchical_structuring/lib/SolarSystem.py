@@ -9,16 +9,16 @@ import avango.daemon
 
 ### import python libraries
 import math
-import random as rand
+import random
 
 class OrbitVisualization:
 
     ### constructor
-    def __init__(self, PARENT_NODE = None , ORBIT_RADIUS = 1.0, ORBIT_INCLINATION = avango.gua.make_rot_mat(0.0, 0, 0, 1)):
+    def __init__(self, PARENT_NODE = None , ORBIT_RADIUS = 1.0, THICKNESS = 0.001):
 
         ### parameters ###
         self.number_of_segments = 50
-        self.thickness = 0.001
+        self.thickness = THICKNESS
         self.color = avango.gua.Color(1.0,1.0,1.0)
         
         ### resources ###
@@ -72,17 +72,17 @@ class SolarSystem(avango.script.Script):
         ### init further resources ###
        
         ## init Sun
-        self.sun = SolarObject( NAME = "sun"
-                              , TEXTURE_PATH = "data/textures/Sun.jpg"
-                              , PARENT_NODE = PARENT_NODE
-                              , SF_TIME_SCALE = self.sf_time_scale_factor
-                              , DIAMETER = 1392000.0 * 0.05 # downscale sun geometry relative to planet sizes
-                              , ORBIT_RADIUS = 0.0 # in km
-                              , ORBIT_INCLINATION = 0.0 # in degrees
-                              , ORBIT_DURATION = 0.0 # in days
-                              , ROTATION_INCLINATION = 7.0 # in degrees
-                              , ROTATION_DURATION = 0.0 # in days
-                              )
+        self.sun = SunObject( NAME = "sun"
+                            , TEXTURE_PATH = "data/textures/Sun.jpg"
+                            , PARENT_NODE = PARENT_NODE
+                            , SF_TIME_SCALE = self.sf_time_scale_factor
+                            , DIAMETER = 1392000.0 * 0.05 # downscale sun geometry relative to planet sizes
+                            , ORBIT_RADIUS = 0.0 # in km
+                            , ORBIT_INCLINATION = 0.0 # in degrees
+                            , ORBIT_DURATION = 0.0 # in days
+                            , ROTATION_INCLINATION = 7.5 # in degrees
+                            , ROTATION_DURATION = 30.0 # in days
+                            )
                                                                             
         # init lightsource (only for sun)
         self.sun_light = avango.gua.nodes.LightNode(Name = "sun_light", Type = avango.gua.LightType.POINT)
@@ -100,7 +100,7 @@ class SolarSystem(avango.script.Script):
                                    SF_TIME_SCALE = self.sf_time_scale_factor,
                                    DIAMETER = 4878.0,
                                    ORBIT_RADIUS = 57900000.0, # in km
-                                   ORBIT_INCLINATION = 40.0, # in degrees
+                                   ORBIT_INCLINATION = 7.0, # in degrees
                                    ORBIT_DURATION = 28.0, # in days
                                    ROTATION_INCLINATION = 7.0, # in degrees
                                    ROTATION_DURATION = 87.5) # in days)
@@ -139,7 +139,8 @@ class SolarSystem(avango.script.Script):
                                    ORBIT_INCLINATION = 0.0, # in degrees
                                    ORBIT_DURATION = 27.0, # in days
                                    ROTATION_INCLINATION = 6.6, # in degrees
-                                   ROTATION_DURATION = 27.0) # in days)
+                                   ROTATION_DURATION = 27.0,
+                                   IS_MOON = True)
 
         ## init Mars
         self.mars = SolarObject(NAME = "mars",
@@ -161,23 +162,23 @@ class SolarSystem(avango.script.Script):
                                    DIAMETER = 142754.0,
                                    ORBIT_RADIUS = 778300000.0, # in km
                                    ORBIT_INCLINATION = 1.304, # in degrees
-                                   ORBIT_DURATION = (11.86 * 365), # in days
+                                   ORBIT_DURATION =  (11.86 * 365), # in days
                                    ROTATION_INCLINATION = 3.1, # in degrees
                                    ROTATION_DURATION = (9.8 / 24) ) # in days)
         ## init Jupiter-Moons
         for i in range(0,16):
-            _random_orbit_radius = rand.randrange(1289800.0, 23700000.0)
             _jupiter_moon = SolarObject(NAME = "jupiter_moon01",
-                                   TEXTURE_PATH = "data/textures/venus.jpg",
-                                   PARENT_NODE = _sun_node, 
+                                   TEXTURE_PATH = "data/textures/io.jpg",
+                                   PARENT_NODE = self.jupiter.get_orbit_node(), 
                                    SF_TIME_SCALE = self.sf_time_scale_factor,
-                                   DIAMETER = 12104.0,
-                                   ORBIT_RADIUS = _random_orbit_radius, # in km
-                                   ORBIT_INCLINATION = 10.0, # in degrees
-                                   ORBIT_DURATION = 121.5, # in days
-                                   ROTATION_INCLINATION = 0.0, # in degrees
-                                   ROTATION_DURATION = 2) # in / 24 days)
-        
+                                   DIAMETER = random.randrange(4052.0, 7104.0),
+                                   ORBIT_RADIUS = random.randrange(1289800.0, 15000000.0) * 15, # in km
+                                   ORBIT_INCLINATION = i * 5.5 + random.randrange(1.0,3.0), # in degrees
+                                   ORBIT_DURATION = random.randrange(30,100) * 365 / 10000,# in days
+                                   ROTATION_INCLINATION = i * 5.5 + random.randrange(1.0,2.0), # in degrees, # in degrees
+                                   ROTATION_DURATION = random.randrange(2.0,5.0),
+                                   IS_MOON = True)
+
         self.saturn = SolarObject(NAME = "saturn",
                                    TEXTURE_PATH = "data/textures/saturn.jpg",
                                    PARENT_NODE = _sun_node, 
@@ -262,7 +263,9 @@ class SolarObject:
                 , ORBIT_INCLINATION = 0.0 # in degrees
                 , ORBIT_DURATION = 0.0
                 , ROTATION_INCLINATION = 0.0 # in degrees
-                , ROTATION_DURATION = 0.0
+                , ROTATION_DURATION = 0.0,
+                  IS_MOON = False,
+                  RENDER_ORBIT = False
                 ):
 
         ### parameters ###
@@ -330,8 +333,11 @@ class SolarObject:
 
         ## init sub classes
         # init orbit visualization here ...
-        _orbit_visu = OrbitVisualization(PARENT_NODE = self.orbit_inclination_node, ORBIT_RADIUS = self.orbit_radius, ORBIT_INCLINATION = self.orbit_inclination_mat)
-
+        if RENDER_ORBIT:
+          if IS_MOON:
+            self.orbit_visu = OrbitVisualization(PARENT_NODE = self.orbit_inclination_node, ORBIT_RADIUS = self.orbit_radius, THICKNESS = 0.0005)
+          else:
+            self.orbit_visu = OrbitVisualization(PARENT_NODE = self.orbit_inclination_node, ORBIT_RADIUS = self.orbit_radius, THICKNESS = 0.001)  
 
 
     ### functions
@@ -355,3 +361,33 @@ class SolarObject:
         self.update_rotation()
 
 
+class SunObject(SolarObject):
+
+  def __init__( self,
+                NAME = "",
+                TEXTURE_PATH = "",
+                PARENT_NODE = None,
+                SF_TIME_SCALE = None,
+                DIAMETER = 1.0,
+                ORBIT_RADIUS = 1.0,
+                ORBIT_INCLINATION = 0.0,
+                ORBIT_DURATION = 0.0,
+                ROTATION_INCLINATION = 0.0,
+                ROTATION_DURATION = 0.0):
+
+    SolarObject.__init__( self, 
+                          NAME = NAME,
+                          TEXTURE_PATH = TEXTURE_PATH,
+                          PARENT_NODE = PARENT_NODE,
+                          SF_TIME_SCALE = SF_TIME_SCALE,
+                          DIAMETER = DIAMETER,
+                          ORBIT_RADIUS = ORBIT_RADIUS,
+                          ORBIT_INCLINATION = ORBIT_INCLINATION,
+                          ORBIT_DURATION = ORBIT_DURATION,
+                          ROTATION_INCLINATION = ROTATION_INCLINATION,
+                          ROTATION_DURATION = ROTATION_DURATION)
+
+    self.object_geometry.Material.value.set_uniform("ColorMap", TEXTURE_PATH)
+    self.object_geometry.Material.value.set_uniform("Roughness", 0.0)        
+    self.object_geometry.Material.value.set_uniform("Emissivity", 1.0)
+    self.object_geometry.Material.value.EnableBackfaceCulling.value = False
