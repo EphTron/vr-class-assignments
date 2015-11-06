@@ -1,0 +1,6 @@
+data/*
+list-ev
+*.pdf
+*/__pycache__
+*~
+
