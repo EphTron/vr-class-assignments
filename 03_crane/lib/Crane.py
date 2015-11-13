@@ -54,7 +54,6 @@ class Crane:
 
 
 
-
         ## ToDo: init second hinge && connect rotation input 
         rot_offset_mat = avango.gua.make_rot_mat(90.0,1.0,0.0,0.0)
         self.hinge_2 = Hinge()
