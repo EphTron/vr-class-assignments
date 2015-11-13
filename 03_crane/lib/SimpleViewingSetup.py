@@ -7,20 +7,25 @@ import avango.daemon
 
 ### import application libraries
 from lib.GuaVE import GuaVE
+from lib.FPSGui import FPSGui
 
 
 class SimpleViewingSetup:
 
     ### constructor
-    def __init__(self, SCENEGRAPH, STEREO_MODE, HEADTRACKING_FLAG):
+    def __init__( self
+                , SCENEGRAPH = None
+                , PARENT_NODE = None
+                , STEREO_MODE = "mono"
+                , HEADTRACKING_FLAG = False
+                ):
 
-        ### external references ###
-        self.SCENEGRAPH = SCENEGRAPH
 
         ### parameters ###
         #self.window_size = avango.gua.Vec2ui(2560, 1440) # in pixels
         self.window_size = avango.gua.Vec2ui(1920, 1200) # in pixels
-        self.screen_dimensions = avango.gua.Vec2(0.495, 0.335) # in meter
+        #self.window_size = avango.gua.Vec2ui(1280, 720) # in pixels
+        self.screen_dimensions = avango.gua.Vec2(0.595, 0.335) # in meter
         self.screen_mat = avango.gua.make_trans_mat(0.0, 0.0, 0.0)
 
 
@@ -30,6 +35,7 @@ class SimpleViewingSetup:
 
         ## init window
         self.window = avango.gua.nodes.GlfwWindow(Title = "window")
+        self.window.EnableFullscreen.value = True
         self.window.Size.value = self.window_size
         self.window.LeftResolution.value = self.window_size
         
@@ -38,39 +44,42 @@ class SimpleViewingSetup:
 
         ## init viewer
         self.viewer = avango.gua.nodes.Viewer()
-        self.viewer.SceneGraphs.value = [self.SCENEGRAPH]
+        self.viewer.SceneGraphs.value = [SCENEGRAPH]
         self.viewer.Windows.value = [self.window]
-        self.viewer.DesiredFPS.value = 200.0 # in Hz
+        self.viewer.DesiredFPS.value = 60.0 # in Hz
 
 
         ## init passes & render pipeline description
         self.resolve_pass = avango.gua.nodes.ResolvePassDescription()
-        self.resolve_pass.EnableSSAO.value = False
-        self.resolve_pass.SSAOIntensity.value = 4.0
+        self.resolve_pass.EnableSSAO.value = True
+        self.resolve_pass.SSAOIntensity.value = 3.0
         self.resolve_pass.SSAOFalloff.value = 10.0
-        self.resolve_pass.SSAORadius.value = 7.0
+        self.resolve_pass.SSAORadius.value = 2.0
         #self.resolve_pass.EnableScreenSpaceShadow.value = True
-        self.resolve_pass.EnvironmentLightingColor.value = avango.gua.Color(0.1, 0.1, 0.1)
+        self.resolve_pass.EnvironmentLightingColor.value = avango.gua.Color(0.2, 0.2, 0.2)
         self.resolve_pass.ToneMappingMode.value = avango.gua.ToneMappingMode.UNCHARTED
         self.resolve_pass.Exposure.value = 1.0
 
         #self.resolve_pass.BackgroundMode.value = avango.gua.BackgroundMode.COLOR
-        #self.resolve_pass.BackgroundColor.value = avango.gua.Color(0.45, 0.5, 0.6)        
+        #self.resolve_pass.BackgroundColor.value = avango.gua.Color(0.45, 0.5, 0.6)
         self.resolve_pass.BackgroundMode.value = avango.gua.BackgroundMode.SKYMAP_TEXTURE
-        self.resolve_pass.BackgroundTexture.value = "/opt/guacamole/resources/skymaps/stars.jpg"
-
+        self.resolve_pass.BackgroundTexture.value = "/opt/guacamole/resources/skymaps/DH216SN.png"
+        #self.resolve_pass.BackgroundTexture.value = "/opt/guacamole/resources/skymaps/warehouse.jpg"
 
         self.pipeline_description = avango.gua.nodes.PipelineDescription(Passes = [])
-        self.pipeline_description.EnableABuffer.value = True        
+        self.pipeline_description.EnableABuffer.value = False
         self.pipeline_description.Passes.value.append(avango.gua.nodes.TriMeshPassDescription())
+        #self.pipeline_description.Passes.value.append(avango.gua.nodes.TexturedQuadPassDescription())
         self.pipeline_description.Passes.value.append(avango.gua.nodes.LightVisibilityPassDescription())
+        #self.pipeline_description.Passes.value.append(avango.gua.nodes.BBoxPassDescription())
         self.pipeline_description.Passes.value.append(self.resolve_pass)
+        self.pipeline_description.Passes.value.append(avango.gua.nodes.TexturedScreenSpaceQuadPassDescription())               
         self.pipeline_description.Passes.value.append(avango.gua.nodes.SSAAPassDescription())
 
 
         ## init navigation node
         self.navigation_node = avango.gua.nodes.TransformNode(Name = "navigation_node")
-        self.SCENEGRAPH.Root.value.Children.value.append(self.navigation_node)
+        PARENT_NODE.Children.value.append(self.navigation_node)
         
         ## init head node
         self.head_node = avango.gua.nodes.TransformNode(Name = "head_node")
@@ -79,7 +88,7 @@ class SimpleViewingSetup:
 
         if HEADTRACKING_FLAG == True:
             self.headtracking_sensor = avango.daemon.nodes.DeviceSensor(DeviceService = avango.daemon.DeviceService())
-            self.headtracking_sensor.Station.value = "tracking-pst-head1"
+            self.headtracking_sensor.Station.value = "tracking-lcd-glasses-1"
             self.headtracking_sensor.TransmitterOffset.value = avango.gua.make_identity_mat()
             self.headtracking_sensor.ReceiverOffset.value = avango.gua.make_identity_mat()
 
@@ -96,7 +105,7 @@ class SimpleViewingSetup:
 
         ## init camera node
         self.camera_node = avango.gua.nodes.CameraNode(Name = "camera_node")
-        self.camera_node.SceneGraph.value = self.SCENEGRAPH.Name.value
+        self.camera_node.SceneGraph.value = SCENEGRAPH.Name.value
         self.camera_node.LeftScreenPath.value = self.screen_node.Path.value
         self.camera_node.NearClip.value = 0.1 # in meter
         self.camera_node.FarClip.value = 100.0 # in meter
@@ -115,6 +124,12 @@ class SimpleViewingSetup:
 
             self.set_eye_distance(0.064)
 
+
+        ## intit FPS gui sub-class
+        self.fpsGUI = FPSGui( PARENT_NODE = self.screen_node
+                            , WINDOW = self.window
+                            , VIEWER = self.viewer
+                            )
 
 
     ### functions ###
