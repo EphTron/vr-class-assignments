@@ -70,7 +70,7 @@ class Crane:
         ## ToDo: init second arm-segment
         self.arm_2 = ArmSegment( PARENT_NODE = self.hinge_2.get_node(),
                                  DIAMETER = 0.008,
-                                 LENGTH = 0.07,
+                                 LENGTH = 0.075,
                                  ROT_OFFSET_MAT = avango.gua.make_identity_mat()) 
 
         ## ToDo: init third hinge && connect rotation input 
@@ -86,14 +86,13 @@ class Crane:
         ## ToDo: init third arm-segment
         self.arm_3 = ArmSegment( PARENT_NODE = self.hinge_3.get_node(),
                                  DIAMETER = 0.008,
-                                 LENGTH = 0.05,
+                                 LENGTH = 0.055,
                                  ROT_OFFSET_MAT = avango.gua.make_identity_mat()) 
-
 
         ## ToDo: init hook
         self.hook = Hook()
         self.hook.my_constructor( PARENT_NODE = self.arm_3.get_top_node(),
                                   SIZE = 0.05,
-                                  TARGET_LIST = [])
+                                  TARGET_LIST = TARGET_LIST)
  
  

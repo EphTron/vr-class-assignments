@@ -83,4 +83,3 @@ class Scene:
         self.box3_geometry.Material.value.set_uniform("RoughnessMap", "data/textures/box2/roughness.jpg")
         PARENT_NODE.Children.value.append(self.box3_geometry)
         self.box_list.append(self.box3_geometry)
-    

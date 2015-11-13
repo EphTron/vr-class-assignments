@@ -20,8 +20,7 @@ class Hook(avango.script.Script):
     def my_constructor( self    
                       , PARENT_NODE = None
                       , SIZE = 0.1
-                      , TARGET_LIST = []
-                      ):
+                      , TARGET_LIST = []):
 
         ### variables ###
         self.color = avango.gua.Vec4(0.0,0.0,0.0,1.0)
@@ -55,7 +54,7 @@ class Hook(avango.script.Script):
 
 
         ## ToDo: init field connections
-        # ...
+        self.sf_mat.connect_from(self.hook_geometry.WorldTransform)
 
 
     ### callback functions ###

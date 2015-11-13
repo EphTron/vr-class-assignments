@@ -43,14 +43,13 @@ class KeyboardInput(avango.script.Script):
         self.super(KeyboardInput).__init__()
    
         ### parameters ###
-        self.rot_velocity = 2.0 # in degrees/sec
+        self.rot_velocity = 40.0 # in degrees/sec
         
         ### variables ###
         self.sav_time = time.time()
-                
    
         ### resources ###
-        
+
         ## init sensor
         self.keyboard_sensor = avango.daemon.nodes.DeviceSensor(DeviceService = avango.daemon.DeviceService())
         self.keyboard_sensor.Station.value = "device-keyboard"
@@ -90,10 +89,8 @@ class KeyboardInput(avango.script.Script):
         _lf_time = time.time() - self.sav_time # calc duration of last frame --> need for frame-rate independent mapping
         self.sav_time = time.time()
         #print(_lf_time)
-        _delta_time = _lf_time * 1000 / (self.sf_max_fps.value)
-        print(_delta_time) 
-        
-        
+        _delta_time = 1 / (self.sf_max_fps.value * (1 - _lf_time))
+                
         ## get rot_value0 --> for first hinge
         if self.sf_button0.value == True:
             self.sf_rot_value0.value = self.rot_velocity * -1.0 * _delta_time

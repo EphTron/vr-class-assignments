@@ -40,8 +40,8 @@ class ArmSegment:
         self.arm_geometry.Material.value.set_uniform("Emissivity", 0.6)
         self.arm_geometry.Material.value.set_uniform("Roughness", 0.40)
 
-        self.arm_transform_bottom = avango.gua.nodes.TransformNode()
-        self.arm_transform_top = avango.gua.nodes.TransformNode()
+        self.arm_transform_bottom = avango.gua.nodes.TransformNode(Name = "arm_begin_transform_"+str(self.id))
+        self.arm_transform_top = avango.gua.nodes.TransformNode(Name = "arm_end_transform_"+str(self.id))
         self.arm_transform_top.Transform.value = avango.gua.make_trans_mat(0.0,LENGTH,0.0)
 
         PARENT_NODE.Children.value.append(self.arm_transform_bottom)
