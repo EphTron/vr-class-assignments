@@ -89,25 +89,27 @@ class KeyboardInput(avango.script.Script):
 
         _lf_time = time.time() - self.sav_time # calc duration of last frame --> need for frame-rate independent mapping
         self.sav_time = time.time()
+        #print(_lf_time)
+        _delta_time = _lf_time * 1000 / (self.sf_max_fps.value)
+        print(_delta_time) 
         
         
         ## get rot_value0 --> for first hinge
         if self.sf_button0.value == True:
-            self.sf_rot_value0.value = self.rot_velocity * -1.0
-            print(self.sf_rot_value0.value, "links")
+            self.sf_rot_value0.value = self.rot_velocity * -1.0 * _delta_time
 
         elif self.sf_button1.value == True:
-            self.sf_rot_value0.value = self.rot_velocity
-            print(self.sf_rot_value0.value, "rechts")
+            self.sf_rot_value0.value = self.rot_velocity * _delta_time
+       
         else:
             self.sf_rot_value0.value = 0.0
 
         ## get rot_value1 --> for second hinge
         if self.sf_button2.value == True:
-            self.sf_rot_value1.value = self.rot_velocity * -1.0
+            self.sf_rot_value1.value = self.rot_velocity * -1.0 * _delta_time
 
         elif self.sf_button3.value == True:
-            self.sf_rot_value1.value = self.rot_velocity
+            self.sf_rot_value1.value = self.rot_velocity * _delta_time
         
         else:
             self.sf_rot_value1.value = 0.0
@@ -115,11 +117,11 @@ class KeyboardInput(avango.script.Script):
 
         ## get rot_value2 --> for third hinge
         if self.sf_button4.value == True:
-            self.sf_rot_value2.value = self.rot_velocity * -1.0
+            self.sf_rot_value2.value = self.rot_velocity * -1.0 * _delta_time
 
         elif self.sf_button5.value == True:
-            self.sf_rot_value2.value = self.rot_velocity
-        
+            self.sf_rot_value2.value = self.rot_velocity * _delta_time
+
         else:
             self.sf_rot_value2.value = 0.0
 

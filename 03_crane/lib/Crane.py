@@ -70,7 +70,7 @@ class Crane:
         ## ToDo: init second arm-segment
         self.arm_2 = ArmSegment( PARENT_NODE = self.hinge_2.get_node(),
                                  DIAMETER = 0.008,
-                                 LENGTH = 0.05,
+                                 LENGTH = 0.07,
                                  ROT_OFFSET_MAT = avango.gua.make_identity_mat()) 
 
         ## ToDo: init third hinge && connect rotation input 

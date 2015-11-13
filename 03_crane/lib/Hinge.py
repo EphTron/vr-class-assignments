@@ -79,14 +79,13 @@ class Hinge(avango.script.Script):
     
     @field_has_changed(sf_rot_value)
     def sf_rot_value_changed(self):
-        #print("Trans:",self.hinge_transform.Transform.value)
-        ## ToDo: accumulate input to hinge node && consider rotation contraints of this hinge
-        print(self.id," - angle:", self.rot_value)
         self.rot_value += self.sf_rot_value.value
+        
         if(self.rot_value > self.rot_constraint[1]):
             self.rot_value = self.rot_constraint[1]
         elif(self.rot_value < self.rot_constraint[0]):
             self.rot_value = self.rot_constraint[0]
+
         _temp_rot_mat = avango.gua.make_rot_mat(self.rot_value,self.rot_axis)
         self.hinge_transform.Transform.value = _temp_rot_mat
                
