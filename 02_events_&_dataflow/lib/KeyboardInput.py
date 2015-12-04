@@ -31,7 +31,6 @@ class KeyboardInput(avango.script.Script):
     sf_max_fps = avango.SFFloat()
     sf_max_fps.value = 60.0 # initial value
 
-
     ## constructor
     def __init__(self):
         self.super(KeyboardInput).__init__()
