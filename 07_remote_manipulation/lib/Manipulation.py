@@ -274,7 +274,6 @@ class VirtualRay(ManipulationTechnique):
 
         self.intersection_point_size = 0.01 # in meter
 
-
         ### further resources ###
         _loader = avango.gua.nodes.TriMeshLoader()
 
@@ -352,6 +351,12 @@ class VirtualHand(ManipulationTechnique):
 
         ManipulationTechnique.my_constructor(self, MANIPULATION_MANAGER = MANIPULATION_MANAGER, PARENT_NODE = PARENT_NODE)
 
+        # 1. calcluate pick result with a short picklength in order to just grab the object using the hand model
+        # 2. if there was an object within the picking range:
+            # get objects world position
+            # calculate tool (hand) distance to object
+            # show grab indicator at that distance
+        # 3. if button is released hide indicator by appendin invisible tag
 
         ### further parameters ###  
         self.intersection_point_size = 0.01 # in meter
@@ -420,6 +425,11 @@ class GoGo(ManipulationTechnique):
 
         ManipulationTechnique.my_constructor(self, MANIPULATION_MANAGER = MANIPULATION_MANAGER, PARENT_NODE = PARENT_NODE)
 
+        # idea:
+        # define two distances
+            # 1. close range within 35 centimeters: direct mapping of distance between camera and tool
+            # 2. far range more than 35 centimeters: non isometric mapping of tool distance using a transfer function 
+
 
         ### further parameters ###  
         self.intersection_point_size = 0.01 # in meter
@@ -479,23 +489,32 @@ class GoGo(ManipulationTechnique):
 
     ### functions ###
     def gogo(self):
-        _tool_pos = self.pointer_node.Transform.value.get_translate()
+        # _tool_pos = self.pointer_node.Transform.value.get_translate()
         #_tool_pos = self.tool_node.Transform.value.get_translate()
         
+        print('pointer mat:', self.pointer_node.Transform.value.get_translate())
+        print('tool mat:   ', self.tool_node.Transform.value.get_translate())
+
         # get world coordinates of head
         # _head_pos = self.MANIPULATION_MANAGER.HEAD_NODE.WorldTransform.value.get_translate()
         # print(_head_pos)
         _head_pos = self.MANIPULATION_MANAGER.HEAD_NODE.Transform.value.get_translate()
-        _head_pos.y = _tool_pos.y
 
-        _head_tool_distance = (_tool_pos - _head_pos).length()
+        # set head and tool height the same in order to keep the direct distance between head and tool
+        _head_pos.y = self.pointer_node.Transform.value.get_translate().y
+
+        _head_tool_distance = (self.pointer_node.Transform.value.get_translate() - _head_pos).length()
 
         if _head_tool_distance > self.gogo_threshold:
-            _z_offset = _head_tool_distance - self.gogo_threshold
-            _z_offset = (_z_offset * _z_offset)*7
-            self.tool_node.Transform.value = avango.gua.make_trans_mat(0.0,0.0,-_z_offset)
+            _distance = _head_tool_distance - self.gogo_threshold
+            _mapping = transfer_function(_distance)
+            self.tool_node.Transform.value = avango.gua.make_trans_mat(0.0,0.0,-_mapping)
         else:
             self.tool_node.Transform.value = avango.gua.make_identity_mat()
+
+    def transfer_function(self, value):
+        # return value * math.exp(value) - 1.07
+        return (value * value) * 7
 
 class Homer(ManipulationTechnique):
 
@@ -511,6 +530,10 @@ class Homer(ManipulationTechnique):
 
         ManipulationTechnique.my_constructor(self, MANIPULATION_MANAGER = MANIPULATION_MANAGER, PARENT_NODE = PARENT_NODE)
 
+        # idea:
+            # toggle between two nodes:
+                # 1. ray mode in order to select objects using the ray withi ray lenght
+                # 2. if button is pressed use the hand tool to mainpulate the selected object
 
         ### further parameters ###  
         self.ray_length = 5.0 # in meter
@@ -564,10 +587,12 @@ class Homer(ManipulationTechnique):
     def evaluate(self):
     
         if self.enable_flag == True:  
-            if self.mode == 0: # ray submode
+            if self.mode == 0:
+                # proceed as in virtual ray mode with the exception if there is a pressed butten continue in hand mode in the next frame
                 self.ray_mode()
                 
             elif self.mode == 1: # hand submode
+                # 
                 self.hand_mode()
 
             # evtl. drag object
@@ -601,8 +626,8 @@ class Homer(ManipulationTechnique):
             self.first_pick_result = None
 
         if self.first_pick_result is not None:
-            _obj_pos = self.first_pick_result.WorldPosition.value # world position of selected object
-            _hand_obj_distance = (self.tool_node.WorldTransform.value.get_translate() - _obj_pos).length() # get distance from hand to obj
+            # get distance from hand to object
+            _hand_obj_distance = (self.tool_node.WorldTransform.value.get_translate() - self.first_pick_result.WorldPosition.value).length() 
             
             # adjust ray
             self.ray_geometry.Transform.value = avango.gua.make_trans_mat(0.0, 0.0, _hand_obj_distance * -0.5) * \
@@ -624,10 +649,12 @@ class Homer(ManipulationTechnique):
 
             self.grab_indicator.Tags.value = ["invisible"]
 
-    def hand_mode(self):    
+    def hand_mode(self):
+        # get tool and head positions 
         _tool_pos = self.pointer_node.Transform.value.get_translate()
         _head_pos = self.MANIPULATION_MANAGER.HEAD_NODE.Transform.value.get_translate()
 
+        # calculate the distance between pointer and camera
         _head_tool_distance = (_tool_pos - _head_pos).length()
 
         if self.distance_sav != 0:
@@ -642,25 +669,30 @@ class Homer(ManipulationTechnique):
     def calc_offset(self):  
         if self.first_pick_result is not None:
             _tool_world_pos = self.pointer_node.WorldTransform.value.get_translate()
-            _intersection_pos = self.first_pick_result.WorldPosition.value            
+            _intersection_pos = self.first_pick_result.WorldPosition.value # vec 
+            # print(_intersection_pos)
 
+            # vector between intersection and tool
             self.vec_sav = _intersection_pos - _tool_world_pos
             
-            _navi_rotation = avango.gua.make_rot_mat(self.PARENT_NODE.Transform.value.get_rotate())
+            _navi_rotation = avango.gua.make_rot_mat(self.PARENT_NODE.Transform.value.get_rotate()) # rot mat of navigation node
             self.vec_sav = avango.gua.make_inverse_mat(_navi_rotation) * self.vec_sav # transform vector into navigation orientation
-            self.vec_sav = avango.gua.Vec3(self.vec_sav.x,self.vec_sav.y,self.vec_sav.z) # make Vec3 from Vec4
+            self.vec_sav = avango.gua.Vec3(self.vec_sav.x, self.vec_sav.y, self.vec_sav.z) # make Vec3 from Vec4
 
             self.homer_offset.Transform.value = avango.gua.make_trans_mat(self.vec_sav)
       
-            _pointer_pos = self.pointer_node.Transform.value.get_translate()
+            _tool_local_pos = self.pointer_node.Transform.value.get_translate()
             _head_pos = self.MANIPULATION_MANAGER.HEAD_NODE.Transform.value.get_translate()
 
-            self.distance_sav = (_pointer_pos - _head_pos).length()
+            self.distance_sav = (_tool_local_pos - _head_pos).length()
            
     
     ## extend respective base-class function
     def start_dragging(self, NODE):
+        
         self.calc_offset()
+        # print('distance:', self.distance_sav)
+
         self.set_homer_mode(1) # switch to hand submode
 
         self.dragged_node = NODE.Parent.value # take the group node of the geomtry node        
