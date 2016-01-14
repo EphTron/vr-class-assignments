@@ -1,0 +1,220 @@
+#!/usr/bin/python
+
+### import guacamole libraries
+import avango
+import avango.gua
+import avango.script
+from avango.script import field_has_changed
+
+### import python libraries
+# ...
+
+
+class InteractiveObject:
+
+  # constructor
+  def __init__(self, SCENE_MANAGER, PARENT_NODE, NAME, FILENAME, MATRIX):
+
+    ### variables ###
+    self.home_mat = avango.gua.make_identity_mat()
+
+    ### init nodes ###
+    if FILENAME == None: # group object
+      self.transform = avango.gua.nodes.TransformNode(Name = NAME)
+
+    else: # geometry object
+      _loader = avango.gua.nodes.TriMeshLoader()
+    
+      self.transform = _loader.create_geometry_from_file(NAME, FILENAME, "data/materials/White.gmd", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
+
+
+    if PARENT_NODE != None:
+      PARENT_NODE.Children.value.append(self.transform)
+
+    self.transform.add_and_init_field(avango.script.SFObject(), "InteractiveObjectClass", self)
+
+    if MATRIX != None:
+      self.set_local_transform(MATRIX)
+
+      self.home_mat = MATRIX # save initial matrix
+
+
+    SCENE_MANAGER.register_interactive_object(self)
+
+
+  ### functions ###
+  def get_node(self):
+
+    return self.transform
+
+
+  def get_object_name(self):
+
+    return self.transform.Name.value
+
+
+  def get_parent_object(self):
+
+    _parent_node = self.transform.Parent.value # get parent node in scenegraph
+
+    if _parent_node.has_field("InteractiveObjectClass"): # valid scene object
+      return _parent_node.InteractiveObjectClass.value
+
+    else: # no valid scene object
+      return None
+
+
+  def get_child_object(self):
+
+    _child_node = self.transform.Children.value[0] # get first child node in scenegraph
+
+    if _child_node.has_field("InteractiveObjectClass"): # valid scene object
+      return _child_node.InteractiveObjectClass.value
+
+    else: # no valid scene object
+      return None
+
+
+  def get_local_transform(self):
+
+    return self.transform.Transform.value
+
+
+  def get_global_transform(self):
+
+    return self.transform.WorldTransform.value
+
+
+  def set_local_transform(self, MATRIX):
+
+    self.transform.Transform.value = MATRIX
+
+
+  def set_global_transform(self, MATRIX):
+
+    _parent_node = self.transform.Parent.value # get parent node in scenegraph
+    _parent_world_transform = _parent_node.WorldTransform.value
+
+    self.transform.Transform.value = avango.gua.make_inverse_mat(_parent_world_transform) * MATRIX # matrix is transformed into world coordinate system of parent node in scenegraph
+
+
+  def reset(self):
+
+    self.transform.Transform.value = self.home_mat # set back to intial matrix
+
+
+
+class SceneManager(avango.script.Script):
+
+  ### fields ###
+
+  ## input fields
+  sf_reset_button = avango.SFBool()
+
+  # constructor
+  def __init__(self):
+    self.super(SceneManager).__init__()
+
+
+  def my_constructor(self, SCENE_ROOT):
+
+    ### variables ###
+    self.interactive_objects = []
+
+    ### sensors ###
+    self.keyboard_device_sensor = avango.daemon.nodes.DeviceSensor(DeviceService = avango.daemon.DeviceService())
+    self.keyboard_device_sensor.Station.value = "device-keyboard"
+
+    self.sf_reset_button.connect_from(self.keyboard_device_sensor.Button18) # spacebar key
+
+
+    ### init scene lights ###
+    self.scene_light = avango.gua.nodes.SpotLightNode(Name = "scene_light")
+    SCENE_ROOT.Children.value.append(self.scene_light)
+    self.scene_light.Color.value = avango.gua.Color(0.8, 0.8, 0.8)
+    self.scene_light.Softness.value = 0.5 # exponent
+    self.scene_light.Falloff.value = 0.5 # exponent
+    self.scene_light.EnableDiffuseShading.value = True
+    self.scene_light.EnableSpecularShading.value = True
+    self.scene_light.EnableShadows.value = False
+    self.scene_light.ShadowMapSize.value = 4096
+    self.scene_light.ShadowOffset.value = 0.001
+    self.scene_light.Transform.value = avango.gua.make_trans_mat(0.0, 2.0, 0.0) * \
+                                        avango.gua.make_rot_mat(-90.0,1,0,0) * \
+                                        avango.gua.make_scale_mat(3.0)
+    
+
+    ### init scene geometry ###
+    _loader = avango.gua.nodes.TriMeshLoader()
+
+    # init ground plane
+    self.plane_geometry = _loader.create_geometry_from_file("plane_geometry", "data/objects/cube.obj", "data/materials/ComplexPhongTiles.gmd", avango.gua.LoaderFlags.DEFAULTS)
+    SCENE_ROOT.Children.value.append(self.plane_geometry)
+    self.plane_geometry.Transform.value = avango.gua.make_trans_mat(0.0,-0.17,0.0) * \
+                                          avango.gua.make_scale_mat(1.0,0.005,1.0)
+    
+    
+    self.scene_group = InteractiveObject(self, SCENE_ROOT, "scene_group", None, avango.gua.make_scale_mat(1.6,1.6,1.6))
+    
+    # table
+    _mat = avango.gua.make_trans_mat(0.0, -0.17, 0.0) * \
+            avango.gua.make_rot_mat(90.0,-1,0,0) * \
+            avango.gua.make_scale_mat(0.0003)
+    self.table = InteractiveObject(self, self.scene_group.get_node(), "table", "/opt/3d_models/Jacobs_Models/table_ikea/table_ikea.obj", _mat) # parameters: scene manager | parent node or None | object name | geometry path or None | object matrix or None
+
+    # notebook
+    _mat = avango.gua.make_trans_mat(0.1, 0.055, 0.0) * \
+            avango.gua.make_rot_mat(90.0,-1,0,0) * \
+            avango.gua.make_rot_mat(10.0,0,0,-1) * \
+            avango.gua.make_scale_mat(0.011)
+    self.notebook = InteractiveObject(self, self.scene_group.get_node(), "notebook", "/opt/3d_models/Jacobs_Models/notebook/notebook.obj", _mat)     
+
+    # tablelamp
+    _mat = avango.gua.make_trans_mat(-0.08, 0.215, -0.0) * \
+            avango.gua.make_rot_mat(90.0,-1,0,0) * \
+            avango.gua.make_rot_mat(135.0,0,0,-1) * \
+            avango.gua.make_scale_mat(0.00022)
+    self.tablelamp = InteractiveObject(self, self.scene_group.get_node(), "tablelamp", "/opt/3d_models/Jacobs_Models/tablelamp/tablelamp.obj", _mat)
+
+    # telephone
+    _mat = avango.gua.make_trans_mat(-0.05, 0.065, -0.03) * \
+            avango.gua.make_rot_mat(90.0,-1,0,0) * \
+            avango.gua.make_rot_mat(65.0,0,0,-1) * \
+            avango.gua.make_scale_mat(0.000012)
+    self.telephone = InteractiveObject(self, self.scene_group.get_node(), "telephone", "/opt/3d_models/Jacobs_Models/telephone/telephone.obj", _mat)
+    
+    # penholder
+    _mat = avango.gua.make_trans_mat(-0.08, 0.2, -0.13) * \
+            avango.gua.make_rot_mat(90.0,-1,0,0) * \
+            avango.gua.make_scale_mat(0.0002)
+    self.penholder = InteractiveObject(self, self.scene_group.get_node(), "penholder", "/opt/3d_models/Jacobs_Models/penholder/penholder.obj", _mat)    
+
+    # calculator
+    _mat = avango.gua.make_trans_mat(-0.16, 0.055, 0.03) * \
+            avango.gua.make_rot_mat(90.0,-1,0,0) * \
+            avango.gua.make_rot_mat(13.0,0,0,1) * \
+            avango.gua.make_scale_mat(0.01)
+    self.calculator = InteractiveObject(self, self.scene_group.get_node(), "calculator", "/opt/3d_models/Jacobs_Models/calculator/calculator.obj", _mat)    
+
+    
+
+  ### callbacks ###  
+  @field_has_changed(sf_reset_button)
+  def sf_reset_button_changed(self):
+
+    if self.sf_reset_button.value == True: # button pressed
+      self.reset()
+
+
+  ### functions ###
+  def register_interactive_object(self, INTERACTIVE_OBJECT):
+
+    self.interactive_objects.append(INTERACTIVE_OBJECT)
+
+
+  def reset(self):
+
+    for _interactive_object in self.interactive_objects:
+      _interactive_object.reset()
+
+

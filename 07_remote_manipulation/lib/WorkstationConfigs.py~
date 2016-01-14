@@ -1,0 +1,54 @@
+#!/usr/bin/python
+
+### import guacamole libraries
+import avango
+import avango.gua
+
+
+class DellWorkstationConfig:
+
+  # constructor
+  def __init__(self):
+
+    # parameters
+    self.stereo_mode = "mono" # parameters: mono, anaglyph, checkerboard
+    self.window_size = avango.gua.Vec2ui(2560, 1440) # in pixels
+    self.screen_dimensions = avango.gua.Vec2(0.595, 0.335) # in meter
+    self.screen_transform = avango.gua.make_identity_mat()
+    self.tracking_transmitter_offset = avango.gua.make_trans_mat(0.0, -1.41, 0.94)
+    self.head_tracking_station = "tracking-pst-head"
+    self.prop_tracking_station = "tracking-pst-prop"
+    self.pointer_tracking_station = "tracking-pst-pointer"
+
+
+class SamsungWorkstationConfig:
+
+  # constructor
+  def __init__(self):
+
+    # parameters
+    self.stereo_mode = "checkerboard" # parameters: mono, anaglyph, checkerboard
+    self.window_size = avango.gua.Vec2ui(1920, 1080) # in pixels
+    self.screen_dimensions = avango.gua.Vec2(1.235, 0.695) # in meter
+    self.screen_transform = avango.gua.make_rot_mat(-40.0,1,0,0)
+    self.tracking_transmitter_offset = avango.gua.make_trans_mat(0.0,0.0,0.87)
+    self.head_tracking_station = "tracking-pst-head"
+    self.prop_tracking_station = "tracking-pst-prop"
+    self.pointer_tracking_station = "tracking-pst-pointer"
+
+
+class MitsubishiWorkstationConfig:
+
+  # constructor
+  def __init__(self):
+
+    # parameters
+    self.stereo_mode = "checkerboard" # parameters: mono, anaglyph, checkerboard
+    self.window_size = avango.gua.Vec2ui(1920, 1080) # in pixels
+    self.screen_dimensions = avango.gua.Vec2(1.44, 0.81) # in meter
+    self.screen_transform = avango.gua.make_identity_mat()
+    self.tracking_transmitter_offset = avango.gua.make_trans_mat(0.0,-0.28,0.795)
+    self.head_tracking_station = "tracking-pst-head"
+    self.prop_tracking_station = "tracking-pst-prop"
+    self.pointer_tracking_station = "tracking-pst-pointer"
+
