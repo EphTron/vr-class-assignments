@@ -37,7 +37,6 @@ def start():
     viewingSetup.connect_navigation_matrix(avatar.avatar_transform.Transform) # connect avatar matrix to camera matrix
     viewingSetup.viewer.DesiredFPS.connect_from(mover.input.sf_max_fps) # change viewer FPS during runtime
 
-
     ## start application/render loop
     viewingSetup.run(locals(), globals())
 

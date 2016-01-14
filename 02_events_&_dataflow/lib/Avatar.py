@@ -13,7 +13,7 @@ class Avatar:
   
     # constructor
     def __init__( self
-                , PARENT_NODE = None
+                , PARENT_NODE = Nonekey
                 ):
 
 

@@ -428,10 +428,17 @@ class IsotonicPositionControlManipulation(Manipulation):
     _z *= 0.1
    
     _new_mat = self.sf_mat.value * avango.gua.make_trans_mat(_x, _y, _z)
+<<<<<<< HEAD
 
     self.set_matrix(_new_mat) # apply new input matrix
     
     
+=======
+    print(self.sf_mat.value)
+
+    self.set_matrix(_new_mat) # apply new input matrix
+    
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
   # override base class function
   def reset(self):
   
@@ -444,8 +451,12 @@ class IsotonicRateControlManipulation(Manipulation):
 
     self.type = "isotonic-rate-control"
 
+<<<<<<< HEAD
     # further variables if needed
     # ...
+=======
+    self.velocity_vec = avango.gua.Vec3(0,0,0)
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
       
     # init field connections
     self.mf_dof.connect_from(MF_DOF)
@@ -455,20 +466,46 @@ class IsotonicRateControlManipulation(Manipulation):
 
   # override base class function
   def manipulate(self):
+<<<<<<< HEAD
   
     # implement functionality here
     # apply new matrix with self.set_matrix(MATRIX)
     pass
     
+=======
+
+    _x = self.mf_dof.value[0]
+    _y = self.mf_dof.value[1]
+    _z = self.mf_dof.value[2]
+
+    _x *= 0.006
+    _y *= 0.006
+    _z *= 0.006
+
+    _vec = avango.gua.Vec3(_x, _y, _z)
+    self.velocity_vec += _vec
+
+    _current_trans = self.sf_mat.value.get_translate()
+    _rate = _current_trans + self.velocity_vec
+    _new_mat = avango.gua.make_trans_mat(_rate)
+
+    self.set_matrix(_new_mat)
+  
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
 
   # override base class function
   def reset(self):
 
     self.sf_mat.value = avango.gua.make_identity_mat() # snap hand to center
+<<<<<<< HEAD
 
     # implement further reset functionality here if needed
     # ...
     
+=======
+    self.velocity_vec = avango.gua.Vec3(0,0,0)
+
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
 
 class IsotonicAccelerationControlManipulation(Manipulation):
 
@@ -476,10 +513,16 @@ class IsotonicAccelerationControlManipulation(Manipulation):
 
     self.type = "isotonic-acceleration-control"
 
+<<<<<<< HEAD
     # further variables if needed
     # ...
 
       
+=======
+    self.velocity_vec = avango.gua.Vec3(0,0,0)
+    self.acceleration_vec = avango.gua.Vec3(0,0,0)
+
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
     # init field connections
     self.mf_dof.connect_from(MF_DOF)
     
@@ -489,19 +532,44 @@ class IsotonicAccelerationControlManipulation(Manipulation):
   # override base class function
   def manipulate(self):
   
+<<<<<<< HEAD
     # implement functionality here
     # apply new matrix with self.set_matrix(MATRIX)
     pass
 
+=======
+    _x = self.mf_dof.value[0]
+    _y = self.mf_dof.value[1]
+    _z = self.mf_dof.value[2]
+
+    _x *= 0.0001
+    _y *= 0.0001
+    _z *= 0.0001
+
+    _vec = avango.gua.Vec3(_x, _y, _z)
+    self.acceleration_vec += _vec
+    self.velocity_vec += self.acceleration_vec
+
+    _current_trans = self.sf_mat.value.get_translate()
+    _rate = _current_trans + self.velocity_vec
+    _new_mat = avango.gua.make_trans_mat(_rate)
+
+    self.set_matrix(_new_mat)
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
 
   # override base class function
   def reset(self):
 
     self.sf_mat.value = avango.gua.make_identity_mat() # snap hand to center
+<<<<<<< HEAD
 
     # implement further reset functionality here if needed
     # ...
 
+=======
+    self.velocity_vec = avango.gua.Vec3(0,0,0)
+    self.acceleration_vec = avango.gua.Vec3(0,0,0)
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
 
 
 ### ELASTIC DEVICE MAPPINGS ###
@@ -523,11 +591,21 @@ class ElasticPositionControlManipulation(Manipulation):
 
   # override base class function
   def manipulate(self):
+<<<<<<< HEAD
   
     # implement functionality here
     # apply new matrix with self.set_matrix(MATRIX)
     pass
 
+=======
+    
+    _x = self.mf_dof.value[0]
+    _y = self.mf_dof.value[1]
+    _z = self.mf_dof.value[2]
+      
+    _new_mat = avango.gua.make_trans_mat(_x, _y, _z)
+    self.set_matrix(_new_mat)
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
 
   # override base class function
   def reset(self):
@@ -555,6 +633,7 @@ class ElasticRateControlManipulation(Manipulation):
 
   # override base class function
   def manipulate(self):
+<<<<<<< HEAD
   
     # implement functionality here
     # apply new matrix with self.set_matrix(MATRIX)
@@ -568,6 +647,28 @@ class ElasticRateControlManipulation(Manipulation):
   
     # implement further reset functionality here if needed
     # ...
+=======
+
+    _x = self.mf_dof.value[0]
+    _y = self.mf_dof.value[1]
+    _z = self.mf_dof.value[2]
+      
+    _x *= 0.01
+    _y *= 0.01
+    _z *= 0.01
+    
+    _new_mat = self.sf_mat.value * avango.gua.make_trans_mat(_x, _y, _z)
+    print(self.sf_mat.value)
+
+    self.set_matrix(_new_mat) # apply new input matrix
+  
+    # implement functionality here
+    # apply new matrix with self.set_matrix(MATRIX)       
+
+  # override base class function
+  def reset(self):
+      self.sf_mat.value = avango.gua.make_identity_mat() # snap hand to center
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
 
 
 class ElasticAccelerationControlManipulation(Manipulation):
@@ -575,10 +676,17 @@ class ElasticAccelerationControlManipulation(Manipulation):
   def my_constructor(self, SF_MATRIX, MF_DOF):
 
     self.type = "elastic-acceleration-control"
+<<<<<<< HEAD
 
     # further variables if needed
     # ...
       
+=======
+   
+    self.velocity_vec = avango.gua.Vec3(0,0,0)
+    self.acceleration_vec = avango.gua.Vec3(0,0,0)
+
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
     # init field connections
     self.mf_dof.connect_from(MF_DOF)
     
@@ -587,16 +695,43 @@ class ElasticAccelerationControlManipulation(Manipulation):
 
   # override base class function
   def manipulate(self):
+<<<<<<< HEAD
     
     # implement functionality here
     # apply new matrix with self.set_matrix(MATRIX)
     pass
     
+=======
+
+    _x = self.mf_dof.value[0]
+    _y = self.mf_dof.value[1]
+    _z = self.mf_dof.value[2]
+
+    _x *= 0.000001
+    _y *= 0.000001
+    _z *= 0.000001
+
+    _vec = avango.gua.Vec3(_x, _y, _z)
+    self.acceleration_vec += _vec
+    self.velocity_vec += self.acceleration_vec
+
+    _current_trans = self.sf_mat.value.get_translate()
+    _rate = _current_trans + self.velocity_vec
+    _new_mat = avango.gua.make_trans_mat(_rate)
+
+    self.set_matrix(_new_mat)
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
 
   # override base class function
   def reset(self):
 
     self.sf_mat.value = avango.gua.make_identity_mat() # snap hand to center
+<<<<<<< HEAD
  
+=======
+    self.velocity_vec = avango.gua.Vec3(0,0,0)
+    self.acceleration_vec = avango.gua.Vec3(0,0,0)
+
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
     # implement further reset functionality here if needed
     # ...

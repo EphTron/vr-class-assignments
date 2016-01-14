@@ -11,7 +11,11 @@ from lib.Device import *
 from lib.Navigation import *
 from lib.Manipulation import *
 
+<<<<<<< HEAD
 #SPACEMOUSE_MODE = "OLD"
+=======
+# SPACEMOUSE_MODE = "OLD"
+>>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
 SPACEMOUSE_MODE = "NEW"
 
 
