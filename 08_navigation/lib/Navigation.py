@@ -39,7 +39,6 @@ class SteeringNavigation(avango.script.Script):
     ### constructor
     def __init__(self):
         self.super(SteeringNavigation).__init__()
-        
 
     def my_constructor(self,
                        SCENEGRAPH,
@@ -68,7 +67,9 @@ class SteeringNavigation(avango.script.Script):
         self.navidget_start_quat = None
         self.navidget_target_quat = None
         self.navidget_start_time = None
-
+ 
+        ### navigation variables
+        self.rot_center = None
 
         ### resources ###
 
@@ -135,59 +136,100 @@ class SteeringNavigation(avango.script.Script):
         self.sf_pointer_button1.connect_from(self.pointer_device_sensor.Button1)
         self.ray_transform.Transform.connect_from(self.pointer_tracking_sensor.Matrix)
 
-
     
     ### callbacks ###
     @field_has_changed(mf_dof)
     def mf_dof_changed(self):                     
 
-        _movement_factor = 0.5
-        _rotation_factor = 0.5
+        ## deffine minimum translation and roattion to trigger the navigation
+        _min_translation = 0.01
+        _min_rotation    = 0.007
 
         ## handle translation input
         _x = self.mf_dof.value[0]
         _y = self.mf_dof.value[1]
         _z = self.mf_dof.value[2]
 
-        _movement_vector = avango.gua.Vec3(_x, _y, _z) * _movement_factor
-        _movement = _movement_vector.length() # max seems to be 0.3000
-
+        _movement_vector = avango.gua.Vec3(_x, _y, _z)
 
         ## handle rotation input
         _rx = self.mf_dof.value[3]
         _ry = self.mf_dof.value[4]
         _rz = self.mf_dof.value[5]
 
-        _rotation_vector = avango.gua.Vec3(_rx, _ry, _rz) * _rotation_factor
-        _rotation = _rotation_vector.length() # max seems to be 0.2000
-        
-        
+        _rotation_vector = avango.gua.Vec3(_rx, _ry, _rz)
+        # print(_rotation_vector)
 
-        if _rotation > 0.0:
-            _value = (_movement / _rotation)
-            print(_value)
-
-            # if _value > 
-
-        ## accumulate input        
         if self.navigation_mode == 0: # steering mode
             ## implement steering input
-            if _movement or _rotation > 0.0:
-                _rotation_matrix = avango.gua.make_rot_mat(_rotation_vector.x,1,0,0) * \
-                                   avango.gua.make_rot_mat(_rotation_vector.y,0,1,0) * \
-                                   avango.gua.make_rot_mat(_rotation_vector.z,0,0,1)
 
-                self.sf_nav_mat.value = self.sf_nav_mat.value * \
-                                        avango.gua.make_trans_mat(_movement_vector) * \
-                                        _rotation_matrix
+            ### translation
+            # check for each axis wheather the input value is beyond the minimum defined translation
+            # if the translation is bigger than the minimum translation
+            # add the min translation with the sign of current translation to the input translation
+            if(abs(_movement_vector.x) < _min_translation):
+                _movement_vector.x = 0
+            else:
+                _movement_vector.x -= math.copysign(_min_translation, _movement_vector.x)
+            if(abs(_movement_vector.y) < _min_translation):
+                _movement_vector.y = 0
+            else:
+                _movement_vector.y -= math.copysign(_min_translation, _movement_vector.y)
+            if(abs(_movement_vector.z) < _min_translation):
+                _movement_vector.z = 0
+            else:
+                _movement_vector.z -= math.copysign(_min_translation, _movement_vector.z)
 
-                                        
+            # update the _movement_vector by setting it to the 3rd power of the previous movement version
+            _movement_vector.x = pow(_movement_vector.x, 3) * 2
+            _movement_vector.y = pow(_movement_vector.y, 3) * 2
+            _movement_vector.z = pow(_movement_vector.z, 3) * 2
+         
+            # print(_rotation_vector.x)
+
+            ### rotation
+            # same procedure as translation
+            if(abs(_rotation_vector.x) < _min_rotation):
+                _rotation_vector.x = 0
+            else:
+                _rotation_vector.x -= math.copysign(_min_rotation, _rotation_vector.x)
+            if(abs(_rotation_vector.y) < _min_rotation):
+                _rotation_vector.y = 0
+            else:
+                _rotation_vector.y -= math.copysign(_min_rotation, _rotation_vector.y)
+            if(abs(_rotation_vector.z) < _min_rotation):
+                _rotation_vector.z = 0
+            else:
+                _rotation_vector.z -= math.copysign(_min_rotation, _rotation_vector.z)
+
+            _rotation_vector.x = pow(_rotation_vector.x, 3) * 4
+            _rotation_vector.y = pow(_rotation_vector.y, 3) * 4
+            _rotation_vector.z = pow(_rotation_vector.z, 3) * 4
+            # print(_rotation_vector.x)
+
+            # get a quaternion for the current rotation
+            _current_rotation = self.sf_nav_mat.value.get_rotate()
+            # print(type(self.sf_nav_mat.value))
+            # print(type(self.sf_nav_mat.value.get_rotate()))
+
+            # create rotation matrix by getting the values of the quaternion
+            _current_rotation_mat = avango.gua.make_rot_mat( _current_rotation.get_angle(), _current_rotation.get_axis() )
+
+            # rotation matrix
+            _rotation_matrix = avango.gua.make_rot_mat(_rotation_vector.x,1,0,0) * \
+                               avango.gua.make_rot_mat(_rotation_vector.y,0,1,0) * \
+                               avango.gua.make_rot_mat(_rotation_vector.z,0,0,1)
+
+            # create new movement matrix containing the 
+            _movement_matrix   = _current_rotation_mat * avango.gua.make_trans_mat(_movement_vector)
+            _final_movement = avango.gua.make_trans_mat( self.sf_nav_mat.value.get_translate() + \
+                                                            _movement_matrix  .get_translate())
+
+            # apply final movement to the navigation
+            self.sf_nav_mat.value = _final_movement * _current_rotation_mat * _rotation_matrix
 
 
         elif self.navigation_mode == 1: # maneuvering mode
-            ## implement maneuvering input
-            # ...
-            
             pass
 
 
