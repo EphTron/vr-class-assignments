@@ -451,12 +451,9 @@ class IsotonicRateControlManipulation(Manipulation):
 
     self.type = "isotonic-rate-control"
 
-<<<<<<< HEAD
-    # further variables if needed
-    # ...
-=======
+
     self.velocity_vec = avango.gua.Vec3(0,0,0)
->>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
+
       
     # init field connections
     self.mf_dof.connect_from(MF_DOF)
@@ -466,13 +463,7 @@ class IsotonicRateControlManipulation(Manipulation):
 
   # override base class function
   def manipulate(self):
-<<<<<<< HEAD
-  
-    # implement functionality here
-    # apply new matrix with self.set_matrix(MATRIX)
-    pass
-    
-=======
+
 
     _x = self.mf_dof.value[0]
     _y = self.mf_dof.value[1]
@@ -491,21 +482,13 @@ class IsotonicRateControlManipulation(Manipulation):
 
     self.set_matrix(_new_mat)
   
->>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
 
   # override base class function
   def reset(self):
 
     self.sf_mat.value = avango.gua.make_identity_mat() # snap hand to center
-<<<<<<< HEAD
 
-    # implement further reset functionality here if needed
-    # ...
-    
-=======
     self.velocity_vec = avango.gua.Vec3(0,0,0)
-
->>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
 
 class IsotonicAccelerationControlManipulation(Manipulation):
 
@@ -513,16 +496,9 @@ class IsotonicAccelerationControlManipulation(Manipulation):
 
     self.type = "isotonic-acceleration-control"
 
-<<<<<<< HEAD
-    # further variables if needed
-    # ...
-
-      
-=======
     self.velocity_vec = avango.gua.Vec3(0,0,0)
     self.acceleration_vec = avango.gua.Vec3(0,0,0)
 
->>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
     # init field connections
     self.mf_dof.connect_from(MF_DOF)
     
@@ -532,12 +508,7 @@ class IsotonicAccelerationControlManipulation(Manipulation):
   # override base class function
   def manipulate(self):
   
-<<<<<<< HEAD
-    # implement functionality here
-    # apply new matrix with self.set_matrix(MATRIX)
-    pass
 
-=======
     _x = self.mf_dof.value[0]
     _y = self.mf_dof.value[1]
     _z = self.mf_dof.value[2]
@@ -555,21 +526,15 @@ class IsotonicAccelerationControlManipulation(Manipulation):
     _new_mat = avango.gua.make_trans_mat(_rate)
 
     self.set_matrix(_new_mat)
->>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
 
   # override base class function
   def reset(self):
 
     self.sf_mat.value = avango.gua.make_identity_mat() # snap hand to center
-<<<<<<< HEAD
 
-    # implement further reset functionality here if needed
-    # ...
-
-=======
     self.velocity_vec = avango.gua.Vec3(0,0,0)
     self.acceleration_vec = avango.gua.Vec3(0,0,0)
->>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
+
 
 
 ### ELASTIC DEVICE MAPPINGS ###
@@ -591,13 +556,7 @@ class ElasticPositionControlManipulation(Manipulation):
 
   # override base class function
   def manipulate(self):
-<<<<<<< HEAD
-  
-    # implement functionality here
-    # apply new matrix with self.set_matrix(MATRIX)
-    pass
 
-=======
     
     _x = self.mf_dof.value[0]
     _y = self.mf_dof.value[1]
@@ -605,7 +564,7 @@ class ElasticPositionControlManipulation(Manipulation):
       
     _new_mat = avango.gua.make_trans_mat(_x, _y, _z)
     self.set_matrix(_new_mat)
->>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
+
 
   # override base class function
   def reset(self):
@@ -633,21 +592,7 @@ class ElasticRateControlManipulation(Manipulation):
 
   # override base class function
   def manipulate(self):
-<<<<<<< HEAD
-  
-    # implement functionality here
-    # apply new matrix with self.set_matrix(MATRIX)
-    pass
-         
 
-  # override base class function
-  def reset(self):
-  
-    self.sf_mat.value = avango.gua.make_identity_mat() # snap hand to center
-  
-    # implement further reset functionality here if needed
-    # ...
-=======
 
     _x = self.mf_dof.value[0]
     _y = self.mf_dof.value[1]
@@ -668,7 +613,7 @@ class ElasticRateControlManipulation(Manipulation):
   # override base class function
   def reset(self):
       self.sf_mat.value = avango.gua.make_identity_mat() # snap hand to center
->>>>>>> f99fb1ded9da219bd2122829e56a3cf1d4e57c88
+
 
 
 class ElasticAccelerationControlManipulation(Manipulation):

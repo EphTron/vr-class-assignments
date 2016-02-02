@@ -356,7 +356,7 @@ class VirtualHand(ManipulationTechnique):
             # get objects world position
             # calculate tool (hand) distance to object
             # show grab indicator at that distance
-        # 3. if button is released hide indicator by appendin invisible tag
+        # 3. if button is released hide indicator by appending invisible tag
 
         ### further parameters ###  
         self.intersection_point_size = 0.01 # in meter
@@ -507,7 +507,7 @@ class GoGo(ManipulationTechnique):
 
         if _head_tool_distance > self.gogo_threshold:
             _distance = _head_tool_distance - self.gogo_threshold
-            _mapping = transfer_function(_distance)
+            _mapping = self.transfer_function(_distance)
             self.tool_node.Transform.value = avango.gua.make_trans_mat(0.0,0.0,-_mapping)
         else:
             self.tool_node.Transform.value = avango.gua.make_identity_mat()
@@ -542,8 +542,6 @@ class Homer(ManipulationTechnique):
         self.intersection_point_size = 0.01 # in meter
 
         self.mode = 0 # 0 = ray-mode; 1 = hand-mode
-        self.vec_sav = avango.gua.Vec3()
-        self.distance_sav = 0.0    
 
         ### further resources ###
         _loader = avango.gua.nodes.TriMeshLoader()
@@ -580,6 +578,8 @@ class Homer(ManipulationTechnique):
         self.hand_geometry.Material.value.set_uniform("Color", avango.gua.Vec4(0.91,0.70,0.54,1.0))
         self.tool_node.Children.value.append(self.hand_geometry)
 
+        self.dynamic_object_tool_disvec = avango.gua.Vec3()
+        self.dynamic_tool_head_distance = 0.0    
 
     ### callbacks ###
     
@@ -657,48 +657,70 @@ class Homer(ManipulationTechnique):
         # calculate the distance between pointer and camera
         _head_tool_distance = (_tool_pos - _head_pos).length()
 
-        if self.distance_sav != 0:
-            _factor = _head_tool_distance / self.distance_sav
+        if self.dynamic_tool_head_distance != 0:
+            _factor = _head_tool_distance / self.dynamic_tool_head_distance
         else:
             print("error")
             _factor = 1
     
-        self.homer_offset.Transform.value = avango.gua.make_trans_mat(self.vec_sav * _factor)
+        self.homer_offset.Transform.value = avango.gua.make_trans_mat(self.dynamic_object_tool_disvec * _factor)
         self.grab_indicator.Transform.value = avango.gua.make_scale_mat(self.intersection_point_size)           
 
     def calc_offset(self):  
         if self.first_pick_result is not None:
+            ###
+            # basic idea
+            # vec from object to hand
+            # transform vec into navigation direction system
+            # translate offset_node in that direction
+            # get distance from head to transformed pointer
+            ###
             _tool_world_pos = self.pointer_node.WorldTransform.value.get_translate()
-            _intersection_pos = self.first_pick_result.WorldPosition.value # vec 
-            # print(_intersection_pos)
+
+            _object_pos = self.first_pick_result.WorldPosition.value # vec 
+            # print(_object_pos)
 
             # vector between intersection and tool
-            self.vec_sav = _intersection_pos - _tool_world_pos
-            
-            _navi_rotation = avango.gua.make_rot_mat(self.PARENT_NODE.Transform.value.get_rotate()) # rot mat of navigation node
-            self.vec_sav = avango.gua.make_inverse_mat(_navi_rotation) * self.vec_sav # transform vector into navigation orientation
-            self.vec_sav = avango.gua.Vec3(self.vec_sav.x, self.vec_sav.y, self.vec_sav.z) # make Vec3 from Vec4
 
-            self.homer_offset.Transform.value = avango.gua.make_trans_mat(self.vec_sav)
-      
+            self.dynamic_object_tool_disvec = _object_pos - _tool_world_pos
+            #self.dynamic_object_tool_disvec = (_object_pos - _tool_world_pos).length()
+            _navi_mat = self.PARENT_NODE.Transform.value
+            _navi_rotation = avango.gua.make_rot_mat(_navi_mat.get_rotate()) # rot mat of navigation node
+
+            self.dynamic_object_tool_disvec = avango.gua.make_inverse_mat(_navi_rotation) * self.dynamic_object_tool_disvec # vector von rechts an navigationsmatrix 
+
+            self.dynamic_object_tool_disvec = avango.gua.Vec3(self.dynamic_object_tool_disvec.x, self.dynamic_object_tool_disvec.y, self.dynamic_object_tool_disvec.z) # make Vec3 from Vec4
+            #self.dynamic_object_tool_disvec = (_object_pos - _tool_world_pos).length()
+
+            self.homer_offset.Transform.value = avango.gua.make_trans_mat(self.dynamic_object_tool_disvec)
+            #print("debug")
             _tool_local_pos = self.pointer_node.Transform.value.get_translate()
             _head_pos = self.MANIPULATION_MANAGER.HEAD_NODE.Transform.value.get_translate()
 
-            self.distance_sav = (_tool_local_pos - _head_pos).length()
-           
+            self.dynamic_tool_head_distance = (_tool_local_pos - _head_pos).length()
+           #aaaaaaarrrrggg endlich!!!
     
     ## extend respective base-class function
     def start_dragging(self, NODE):
         
         self.calc_offset()
-        # print('distance:', self.distance_sav)
+        # print('distance:', self.dynamic_tool_head_distance)
 
         self.set_homer_mode(1) # switch to hand submode
 
-        self.dragged_node = NODE.Parent.value # take the group node of the geomtry node        
+        self.dragged_node = NODE.Parent.value      
 
-        _world_tool_mat = self.PARENT_NODE.Transform.value * self.offset_node.Transform.value * self.pointer_node.Transform.value # calc fresh world transform
-        self.dragging_offset_mat = avango.gua.make_inverse_mat(_world_tool_mat) * self.dragged_node.Transform.value # object transformation in pointer coordinate system
+
+        #newest world trans of our nice tool
+        _tool_w_mat = self.pointer_node.WorldTransform.value
+        #print("MAAAAT",_tool_w_mat)
+        _tool_w_mat = self.PARENT_NODE.Transform.value *\
+                      self.homer_offset.Transform.value *\
+                      self.pointer_node.Transform.value 
+        #print("MAAAAT",_tool_w_mat)
+        #
+        self.dragging_offset_mat = avango.gua.make_inverse_mat(_tool_w_mat) *\
+                                   self.dragged_node.Transform.value 
 
 
     ## extend respective base-class function
