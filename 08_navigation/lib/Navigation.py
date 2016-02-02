@@ -152,6 +152,7 @@ class SteeringNavigation(avango.script.Script):
         _movement_vector = avango.gua.Vec3(_x, _y, _z) * _movement_factor
         _movement = _movement_vector.length() # max seems to be 0.3000
 
+
         ## handle rotation input
         _rx = self.mf_dof.value[3]
         _ry = self.mf_dof.value[4]
@@ -182,7 +183,6 @@ class SteeringNavigation(avango.script.Script):
 
                                         
 
-            
 
         elif self.navigation_mode == 1: # maneuvering mode
             ## implement maneuvering input
