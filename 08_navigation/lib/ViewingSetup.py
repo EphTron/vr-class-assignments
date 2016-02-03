@@ -121,7 +121,8 @@ class ViewingSetup:
         if STEREO_FLAG == True:
             self.window.StereoMode.value = STEREO_MODE
 
-            self.set_eye_distance(-0.064)
+            #self.set_eye_distance(-0.064)
+            self.set_eye_distance(0.064)
 
 
 

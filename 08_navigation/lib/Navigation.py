@@ -30,12 +30,11 @@ class SteeringNavigation(avango.script.Script):
     ## internal fields
     mf_pointer_pick_result = avango.gua.MFPickResult()
 
-
     ## output fields
     sf_nav_mat = avango.gua.SFMatrix4()
     sf_nav_mat.value = avango.gua.make_identity_mat()
 
-    
+
     ### constructor
     def __init__(self):
         self.super(SteeringNavigation).__init__()
@@ -48,6 +47,9 @@ class SteeringNavigation(avango.script.Script):
                        POINTER_TRACKING_NAME, 
                        TRACKING_TRANSMITTER_OFFSET,
                        ):
+
+        self.scenegraph = SCENEGRAPH
+        self.parent_node = PARENT_NODE
 
         ### parameters ###
         self.ray_length = 100.0 # in meters
@@ -69,8 +71,17 @@ class SteeringNavigation(avango.script.Script):
         self.navidget_start_time = None
  
         ### navigation variables
-        self.rot_center = None
+        self.rotation_center = None
+        self.first_pick_result = None
+        self.rot_x_accum_value = 0.0
+        self.rot_y_accum_value = 0.0
+        self.manu_distance = 0.0
 
+        self.offset_trans_mat = avango.gua.make_identity_mat()
+        self.offset_rot_mat = avango.gua.make_identity_mat()
+
+
+        
         ### resources ###
 
         # init pointer sensors
@@ -84,6 +95,21 @@ class SteeringNavigation(avango.script.Script):
 
         # init nodes and geometries
         _loader = avango.gua.nodes.TriMeshLoader() 
+
+        self.offset_node = avango.gua.nodes.TransformNode(Name = "offset_node")
+        self.offset_node.Transform.value = avango.gua.make_trans_mat(0.0,0.0,0.0)
+        SCENEGRAPH.Root.value.Children.value.append(self.offset_node)
+
+        self.proxy_geo = _loader.create_geometry_from_file("proxy_geo", "data/objects/sphere.obj", avango.gua.LoaderFlags.DEFAULTS)
+        self.proxy_geo.Transform.value = avango.gua.make_scale_mat(0.6)
+        self.offset_node.Children.value.append(self.proxy_geo)
+        self.proxy_geo.Material.value.set_uniform("Color", avango.gua.Vec4(0.0, 0.0, 1.0, 0.75))
+
+        self.rot_helper = avango.gua.nodes.TransformNode(Name = "rot_helper")
+        self.offset_node.Children.value.append(self.rot_helper)
+
+        #self.proxy_geo.Tags.value = [] # set geometry invisible
+
 
         self.ray_transform = avango.gua.nodes.TransformNode(Name = "ray_transform")
         PARENT_NODE.Children.value.append(self.ray_transform)
@@ -143,7 +169,7 @@ class SteeringNavigation(avango.script.Script):
 
         ## deffine minimum translation and roattion to trigger the navigation
         _min_translation = 0.01
-        _min_rotation    = 0.007
+        _min_rotation    = 0.01
 
         ## handle translation input
         _x = self.mf_dof.value[0]
@@ -223,22 +249,81 @@ class SteeringNavigation(avango.script.Script):
             # create new movement matrix containing the 
             _movement_matrix   = _current_rotation_mat * avango.gua.make_trans_mat(_movement_vector)
             _final_movement = avango.gua.make_trans_mat( self.sf_nav_mat.value.get_translate() + \
-                                                            _movement_matrix  .get_translate())
+                                                         _movement_matrix  .get_translate())
 
             # apply final movement to the navigation
             self.sf_nav_mat.value = _final_movement * _current_rotation_mat * _rotation_matrix
 
 
         elif self.navigation_mode == 1: # maneuvering mode
-            pass
 
+            self.rot_x_accum_value -= _rotation_vector.x
+            self.rot_y_accum_value -= _rotation_vector.y
+            self.manu_distance += _movement_vector.z
+
+            #_rot_mat = avango.gua.make_rot_mat(self.rot_accum_value, 0,1,0)
+
+            _rot_mat = avango.gua.make_rot_mat(self.rot_x_accum_value,1,0,0) * \
+                       avango.gua.make_rot_mat(self.rot_y_accum_value,0,1,0)
+
+
+            self.rot_helper.Transform.value = avango.gua.make_trans_mat(0.0,0.0,self.manu_distance)
+                               
+
+            self.offset_node.Transform.value = self.offset_trans_mat * self.offset_rot_mat * _rot_mat
+            _manu_pos = self.rot_helper.WorldTransform.value.get_translate()
+            #self.sf_nav_mat.value = avango.gua.make_trans_mat(_manu_pos)
+            self.sf_nav_mat.value = self.rot_helper.WorldTransform.value
+            
 
     @field_has_changed(sf_pointer_button0)
     def sf_pointer_button0_changed(self):
-        ## toogle between steering and maneuvering mode    
-        # ...
-        
-        pass
+        if self.sf_pointer_button0.value == True:
+    
+            self.set_navigation_mode(1)
+
+            # if there are objects hit by the ray
+            if len(self.mf_pointer_pick_result.value) > 0:
+                self.first_pick_result = self.mf_pointer_pick_result.value[0]
+            else:
+                self.first_pick_result = None
+
+
+            if self.first_pick_result is not None:
+                
+                _obj_pos = self.first_pick_result.WorldPosition.value# world position of selected object            
+                _obj_mat = avango.gua.make_trans_mat(_obj_pos)
+                p2 = self.parent_node.WorldTransform.value.get_translate()
+                
+                _head_distance = self.sf_head_mat.value.get_translate()
+                self.manu_distance = (_obj_pos - p2).length() +_head_distance.z
+                self.rot_helper.Transform.value = avango.gua.make_trans_mat(0.0,0.0,self.manu_distance)
+                           
+                # translate the indicator and make it visible
+                self.maneuvering_point_geometry.Transform.value = _obj_mat
+                self.maneuvering_point_geometry.Tags.value = []
+
+                self.offset_node.Transform.value = _obj_mat
+
+                p1 = self.rot_helper.WorldTransform.value.get_translate()
+                p3 = self.offset_node.Transform.value.get_translate()
+                vec1 = p3-p1
+                vec2 = p3-p2
+                self.offset_trans_mat = _obj_mat
+                self.offset_rot_mat = self.get_rotation_matrix_between_vectors(vec1, vec2 )
+                self.offset_node.Transform.value = self.offset_trans_mat * self.offset_rot_mat
+
+                self.rot_x_accum_value = 0.0
+                self.rot_y_accum_value = 0.0
+                
+            # if there is no selected node hide the grab indicator
+            else: 
+                self.maneuvering_point_geometry.Tags.value = ["invisible"]
+
+        else:
+            self.set_navigation_mode(0)
+
+
 
 
     @field_has_changed(sf_pointer_button1)
@@ -247,7 +332,7 @@ class SteeringNavigation(avango.script.Script):
         # ...
     
         ## start Navidget animation-mode on button release
-        # ...
+        # ...x 
         
         pass
     
@@ -270,16 +355,29 @@ class SteeringNavigation(avango.script.Script):
     ### functions ###
     def set_navigation_mode(self, MODE):
         self.navigation_mode = MODE
-        
         if self.navigation_mode == 0: # switch to Steering mode
             # set other modes geometry invisible
             self.maneuvering_point_geometry.Tags.value = ["invisible"]
             self.navidget_node.Tags.value = ["invisible"]
 
+            # reappend node to roto
+            #self.offset_node.Children.value.remove(self.parent_node)
+            #self.scenegraph.Root.value.Children.value.append(self.parent_node)
+
+            #print("after",self.parent_node.WorldTransform.value.get_translate())
+            #print("after2",self.offset_node.WorldTransform.value.get_translate())
+
+
             print("SWITCH TO STEERING MODE")
 
         elif self.navigation_mode == 1: # switch to maneuvering mode
             self.maneuvering_point_geometry.Tags.value = []
+
+            #print("wo",self.parent_node.WorldTransform.value.get_translate())
+            #print("wo2",self.offset_node.WorldTransform.value.get_translate())
+            # append navigation node to offset node
+            #self.scenegraph.Root.value.Children.value.remove(self.parent_node)
+            #self.offset_node.Children.value.append(self.parent_node)
 
             print("SWITCH TO MANEUVERING MODE")
         
@@ -353,7 +451,6 @@ class SteeringNavigation(avango.script.Script):
     def get_rotation_matrix_between_vectors(self, VEC1, VEC2):
         VEC1.normalize()
         VEC2.normalize()
-
         _angle = math.degrees(math.acos(VEC1.dot(VEC2)))
         _axis = VEC1.cross(VEC2)
 
