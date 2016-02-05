@@ -129,11 +129,12 @@ class Scene1(Scene):
         self.water_geometry.Transform.value = avango.gua.make_trans_mat(0.0,-0.35,0.0) * avango.gua.make_scale_mat(150.0,1.0,150.0)
         self.water_geometry.Material.value.set_uniform("Roughness", 0.4)
         self.scene_root.Children.value.append(self.water_geometry)
-
+        self.water_geometry.Tags.value = ["town"]
         # town
         self.town = _loader.create_geometry_from_file("town", "/opt/3d_models/architecture/medieval_harbour/town.obj", avango.gua.LoaderFlags.DEFAULTS | avango.gua.LoaderFlags.LOAD_MATERIALS | avango.gua.LoaderFlags.MAKE_PICKABLE)
         self.town.Transform.value = avango.gua.make_scale_mat(7.5)
         self.scene_root.Children.value.append(self.town)
+        self.town.Tags.value = ["town"]
 
         for _node in self.town.Children.value:
             _node.Material.value.EnableBackfaceCulling.value = False
@@ -187,6 +188,7 @@ class Scene2(Scene):
                                                avango.gua.make_rot_mat(-90.0,0,0,1) * \
                                                avango.gua.make_scale_mat(0.035)
         self.scene_root.Children.value.append(self.passat_geometry)
+        self.passat_geometry.Tags.value = ["car"]
         
 
         # ground
@@ -196,6 +198,7 @@ class Scene2(Scene):
         self.ground_geometry.Material.value.set_uniform("Emissivity", 0.5)
         self.ground_geometry.Material.value.set_uniform("Metalness", 0.1)
         self.scene_root.Children.value.append(self.ground_geometry)
+        self.ground_geometry.Tags.value = ["car"]
 
 
         ## init scene light
